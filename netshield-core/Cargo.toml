@@ -1,0 +1,28 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/common",
+    "crates/packet-parser",
+    "crates/detection",
+    "crates/api-server",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["NetShield Contributors"]
+license = "MIT"
+
+[workspace.lints.clippy]
+clone_on_ref_ptr   = "deny"
+unwrap_used        = "warn"
+expect_used        = "warn"
+large_enum_variant = "warn"
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+tokio = { version = "1", features = ["full"] }
+tracing = "0.1"
+chrono = { version = "0.4", features = ["serde"] }
