@@ -1,0 +1,21 @@
+[package]
+name = "netshield-api-server"
+version.workspace = true
+edition.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+netshield-common = { path = "../common" }
+netshield-packet-parser = { path = "../packet-parser" }
+netshield-detection = { path = "../detection" }
+axum = { version = "0.8", features = ["macros", "ws"] }
+tokio.workspace = true
+tokio-stream = { version = "0.1", features = ["sync"] }
+tower-http = { version = "0.6", features = ["cors", "trace"] }
+serde.workspace = true
+serde_json.workspace = true
+tracing.workspace = true
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+chrono.workspace = true
