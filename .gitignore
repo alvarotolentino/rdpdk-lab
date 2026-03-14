@@ -1,0 +1,45 @@
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Docs (spec lives outside repo tracking)
+docs/
+
+# Rust
+target/
+**/*.rs.bk
+*.pdb
+
+# Node / Frontend
+node_modules/
+dist/
+build/
+.env
+.env.*
+
+# Docker
+.docker/
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Logs
+*.log
+
+# PCAP data (can be large)
+*.pcap
+*.pcapng
+
+# Coverage & profiling
+*.profraw
+lcov.info
+coverage/
+tarpaulin-report.html
+flamegraph.svg
+perf.data
+perf.data.old
