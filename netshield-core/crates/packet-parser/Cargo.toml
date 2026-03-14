@@ -1,0 +1,11 @@
+[package]
+name = "netshield-packet-parser"
+version.workspace = true
+edition.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+netshield-common = { path = "../common" }
+thiserror.workspace = true
