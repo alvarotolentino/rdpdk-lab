@@ -1,0 +1,20 @@
+[package]
+name = "traffic-simulator"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+netshield-common = { path = "../common" }
+netshield-packet-parser = { path = "../packet-parser" }
+netshield-detection = { path = "../detection" }
+clap.workspace = true
+rand.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+chrono.workspace = true
+
+[lints]
+workspace = true

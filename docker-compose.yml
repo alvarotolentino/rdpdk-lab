@@ -31,8 +31,8 @@ services:
   # Standalone traffic simulator for load testing
   simulator:
     build:
-      context: ./traffic-simulator
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: traffic-simulator/Dockerfile
     container_name: netshield-simulator
     depends_on:
       backend:

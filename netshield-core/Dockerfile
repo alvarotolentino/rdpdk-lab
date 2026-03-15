@@ -9,13 +9,16 @@ COPY crates/common/Cargo.toml crates/common/Cargo.toml
 COPY crates/packet-parser/Cargo.toml crates/packet-parser/Cargo.toml
 COPY crates/detection/Cargo.toml crates/detection/Cargo.toml
 COPY crates/api-server/Cargo.toml crates/api-server/Cargo.toml
+COPY crates/traffic-simulator/Cargo.toml crates/traffic-simulator/Cargo.toml
 
 # Create stub source files so cargo can resolve the dependency graph
 RUN mkdir -p crates/common/src && echo "pub fn stub() {}" > crates/common/src/lib.rs \
  && mkdir -p crates/packet-parser/src && echo "pub fn stub() {}" > crates/packet-parser/src/lib.rs \
  && mkdir -p crates/detection/src && echo "pub fn stub() {}" > crates/detection/src/lib.rs \
  && mkdir -p crates/api-server/src && echo "fn main() {}" > crates/api-server/src/main.rs \
- && echo "pub fn stub() {}" > crates/api-server/src/lib.rs
+ && echo "pub fn stub() {}" > crates/api-server/src/lib.rs \
+ && mkdir -p crates/traffic-simulator/src && echo "fn main() {}" > crates/traffic-simulator/src/main.rs \
+ && echo "pub fn stub() {}" > crates/traffic-simulator/src/lib.rs
 
 # Build dependencies only (cached unless Cargo.toml changes)
 RUN cargo build --release --bin api-server 2>/dev/null || true
