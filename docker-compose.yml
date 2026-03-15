@@ -1,0 +1,47 @@
+services:
+  backend:
+    build:
+      context: ./netshield-core
+      dockerfile: Dockerfile
+    container_name: netshield-backend
+    ports:
+      - "3001:3001"
+    environment:
+      - RUST_LOG=info,api_server=debug
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/api/v1/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  dashboard:
+    build:
+      context: ./dashboard
+      dockerfile: Dockerfile
+    container_name: netshield-dashboard
+    ports:
+      - "8080:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Standalone traffic simulator for load testing
+  simulator:
+    build:
+      context: ./traffic-simulator
+      dockerfile: Dockerfile
+    container_name: netshield-simulator
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      - BACKEND_URL=http://backend:3001
+      - PACKETS_PER_SECOND=5000
+      - ATTACK_PROBABILITY=0.1
+      - RUST_LOG=info
+    restart: unless-stopped
+    profiles:
+      - with-simulator
