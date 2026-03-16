@@ -17,6 +17,7 @@ pub fn build_router(state: AppState) -> Router {
             "/api/v1/top-talkers",
             axum::routing::get(handlers::top_talkers),
         )
+        .route("/api/v1/ingest", axum::routing::post(handlers::ingest))
         .route("/ws", axum::routing::get(ws::ws_handler))
         .with_state(state)
 }

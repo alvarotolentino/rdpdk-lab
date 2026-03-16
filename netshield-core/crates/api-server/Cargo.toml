@@ -3,13 +3,22 @@ name = "netshield-api-server"
 version.workspace = true
 edition.workspace = true
 
+[[bin]]
+name = "api-server"
+path = "src/main.rs"
+
 [lints]
 workspace = true
+
+[features]
+default = []
+dpdk = ["netshield-packet-capture/dpdk"]
 
 [dependencies]
 netshield-common = { path = "../common" }
 netshield-packet-parser = { path = "../packet-parser" }
 netshield-detection = { path = "../detection" }
+netshield-packet-capture = { path = "../packet-capture" }
 axum = { version = "0.8", features = ["macros", "ws"] }
 tokio.workspace = true
 tokio-stream = { version = "0.1", features = ["sync"] }
@@ -19,3 +28,5 @@ serde_json.workspace = true
 tracing.workspace = true
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 chrono.workspace = true
+clap.workspace = true
+base64 = "0.22"

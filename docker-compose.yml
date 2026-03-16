@@ -4,10 +4,40 @@ services:
       context: ./netshield-core
       dockerfile: Dockerfile
     container_name: netshield-backend
+    # DPDK requires privileged mode for hugepages and PCI device access
+    privileged: true
+    network_mode: host
+    volumes:
+      - /dev/hugepages:/dev/hugepages
+      - /sys/bus/pci:/sys/bus/pci
+      - /sys/kernel/mm/hugepages:/sys/kernel/mm/hugepages
+      - /sys/devices:/sys/devices
+    # Default: DPDK with pcap virtual device on eth0
+    # Override --eal-args for physical NIC or different vdev config
+    command:
+      - "--eal-args"
+      - "netshield -l 0,1 -n 4 --vdev=net_pcap0,iface=eth0"
+    environment:
+      - RUST_LOG=info,netshield_api_server=debug
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/api/v1/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  # Mock mode: use --mock flag for development without DPDK hardware
+  backend-mock:
+    build:
+      context: ./netshield-core
+      dockerfile: Dockerfile
+    container_name: netshield-backend-mock
     ports:
       - "3001:3001"
+    command: ["--mock"]
     environment:
-      - RUST_LOG=info,api_server=debug
+      - RUST_LOG=info,netshield_api_server=debug
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3001/api/v1/health"]
@@ -15,6 +45,8 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
+    profiles:
+      - mock
 
   dashboard:
     build:
@@ -23,9 +55,9 @@ services:
     container_name: netshield-dashboard
     ports:
       - "8080:80"
-    depends_on:
-      backend:
-        condition: service_healthy
+    # Uses network_mode: host backend — connect via localhost
+    environment:
+      - VITE_API_HOST=http://localhost:3001
     restart: unless-stopped
 
   # Standalone traffic simulator for load testing

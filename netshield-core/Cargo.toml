@@ -4,9 +4,13 @@ members = [
     "crates/common",
     "crates/packet-parser",
     "crates/detection",
+    "crates/packet-capture",
     "crates/api-server",
     "crates/traffic-simulator",
 ]
+# dpdk-sys is excluded — only compiled when packet-capture's "dpdk" feature
+# is enabled (Linux with DPDK installed).
+exclude = ["crates/dpdk-sys"]
 
 [workspace.package]
 version = "0.1.0"

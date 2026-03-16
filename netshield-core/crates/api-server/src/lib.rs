@@ -1,21 +1,29 @@
 mod state;
 mod routes;
 mod handlers;
-mod mock_source;
+mod capture;
 mod ws;
 
 use std::net::SocketAddr;
+use netshield_packet_capture::PacketSource;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::EnvFilter;
 
 pub use state::AppState;
 
-/// Start the NetShield API server.
+/// Start the NetShield API server with the given packet source.
+///
+/// The `source` is generic — either a DPDK poll-mode capture (`DpdkSource`)
+/// or a synthetic traffic generator (`MockSource`).  The `dpdk_mode` label
+/// is surfaced on the `/api/v1/health` endpoint.
 ///
 /// # Errors
 /// Returns an error if the server cannot bind to the configured address.
-pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
+pub async fn run<S: PacketSource>(
+    source: S,
+    dpdk_mode: &'static str,
+) -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt()
         .with_env_filter(EnvFilter::try_from_default_env().unwrap_or_else(|_| {
             EnvFilter::new("netshield_api_server=info,tower_http=info")
@@ -23,13 +31,10 @@ pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
         .json()
         .init();
 
-    let state = AppState::new();
+    let state = AppState::new(dpdk_mode);
 
-    // Start the mock packet generator in the background
-    let sim_state = state.clone();
-    tokio::spawn(async move {
-        mock_source::run_mock_traffic(sim_state).await;
-    });
+    // Start the packet capture pipeline (dedicated OS thread → async processing)
+    capture::start_capture(source, state.clone());
 
     // Start the periodic stats snapshot task
     let stats_state = state.clone();

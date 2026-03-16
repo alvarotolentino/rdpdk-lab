@@ -7,6 +7,7 @@ use netshield_common::{
     Alert, DetectionConfig, StatsAccumulator, StatsSnapshot, TrafficStats,
 };
 use netshield_detection::DetectionEngine;
+use netshield_packet_parser::parse_packet;
 use tokio::sync::{broadcast, RwLock};
 
 const MAX_HISTORY_POINTS: usize = 300; // 5 minutes at 1-second intervals
@@ -24,6 +25,7 @@ pub struct InnerState {
     pub alerts: RwLock<Vec<Alert>>,
     pub start_time: Instant,
     pub broadcast_tx: broadcast::Sender<BroadcastMessage>,
+    pub dpdk_mode: &'static str,
 }
 
 /// Message types pushed to WebSocket clients.
@@ -38,12 +40,12 @@ pub enum BroadcastMessage {
 
 impl Default for AppState {
     fn default() -> Self {
-        Self::new()
+        Self::new("mock")
     }
 }
 
 impl AppState {
-    pub fn new() -> Self {
+    pub fn new(dpdk_mode: &'static str) -> Self {
         let config = DetectionConfig::default();
         let (broadcast_tx, _) = broadcast::channel(128);
 
@@ -55,8 +57,41 @@ impl AppState {
                 alerts: RwLock::new(Vec::new()),
                 start_time: Instant::now(),
                 broadcast_tx,
+                dpdk_mode,
             }),
         }
+    }
+
+    /// Process a single raw Ethernet frame through the full pipeline:
+    /// parse → accumulate stats → detect attacks → broadcast alerts.
+    ///
+    /// Returns `Some(alert_count)` if the packet parsed successfully,
+    /// `None` if parsing failed.
+    pub async fn process_raw_packet(&self, raw: &[u8], now: Instant) -> Option<usize> {
+        let timestamp_ns = now.elapsed().as_nanos() as u64;
+        let meta = parse_packet(raw, timestamp_ns).ok()?;
+
+        {
+            let mut acc = self.inner.accumulator.write().await;
+            acc.record_packet(meta.protocol, meta.packet_len);
+        }
+
+        let new_alerts = {
+            let mut detection = self.inner.detection.write().await;
+            detection.process_packet(&meta, now)
+        };
+
+        let count = new_alerts.len();
+        for alert in new_alerts {
+            let _ = self
+                .inner
+                .broadcast_tx
+                .send(BroadcastMessage::NewAlert(alert.clone()));
+            let mut alerts = self.inner.alerts.write().await;
+            alerts.push(alert);
+        }
+
+        Some(count)
     }
 
     /// Snapshot current stats, push to history, and broadcast to WebSocket clients.

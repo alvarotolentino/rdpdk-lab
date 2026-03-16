@@ -15,6 +15,9 @@ tokio.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
 chrono.workspace = true
+reqwest = { version = "0.12", features = ["json"] }
+base64 = "0.22"
+serde_json.workspace = true
 
 [lints]
 workspace = true

@@ -1,4 +1,5 @@
 use axum::extract::{Query, State};
+use axum::http::StatusCode;
 use axum::Json;
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
@@ -20,7 +21,7 @@ pub async fn health(State(state): State<AppState>) -> Json<HealthResponse> {
         status: "healthy",
         uptime_seconds: state.inner.start_time.elapsed().as_secs(),
         version: env!("CARGO_PKG_VERSION"),
-        dpdk_mode: "mock",
+        dpdk_mode: state.inner.dpdk_mode,
     })
 }
 
@@ -161,4 +162,47 @@ pub async fn top_talkers(
         top_talkers: talkers,
         window_seconds: 60,
     })
+}
+
+/// Request body for the packet ingest endpoint.
+#[derive(Deserialize)]
+pub struct IngestRequest {
+    /// Raw Ethernet frames, each base64-encoded.
+    pub packets: Vec<String>,
+}
+
+#[derive(Serialize)]
+pub struct IngestResponse {
+    pub received: usize,
+    pub parsed: usize,
+    pub alerts_generated: usize,
+}
+
+/// Accept a batch of base64-encoded raw packets, parse and run detection.
+pub async fn ingest(
+    State(state): State<AppState>,
+    Json(body): Json<IngestRequest>,
+) -> Result<Json<IngestResponse>, StatusCode> {
+    use base64::Engine;
+    let engine = base64::engine::general_purpose::STANDARD;
+
+    let received = body.packets.len();
+    let mut parsed: usize = 0;
+    let mut alerts_generated: usize = 0;
+    let now = std::time::Instant::now();
+
+    for encoded in &body.packets {
+        let raw = engine.decode(encoded).map_err(|_| StatusCode::BAD_REQUEST)?;
+
+        if let Some(alerts) = state.process_raw_packet(&raw, now).await {
+            parsed += 1;
+            alerts_generated += alerts;
+        }
+    }
+
+    Ok(Json(IngestResponse {
+        received,
+        parsed,
+        alerts_generated,
+    }))
 }

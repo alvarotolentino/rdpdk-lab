@@ -1,0 +1,16 @@
+[package]
+name = "netshield-packet-capture"
+version.workspace = true
+edition.workspace = true
+
+[lints]
+workspace = true
+
+[features]
+default = []
+dpdk = ["dep:dpdk-sys"]
+
+[dependencies]
+dpdk-sys = { path = "../dpdk-sys", optional = true }
+thiserror.workspace = true
+tracing.workspace = true
