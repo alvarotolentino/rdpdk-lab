@@ -1,5 +1,5 @@
 # --- Build stage ---
-FROM rust:1.82-bookworm AS builder
+FROM rust:1.85-bookworm AS builder
 
 WORKDIR /app
 
@@ -8,6 +8,7 @@ COPY netshield-core/Cargo.toml netshield-core/Cargo.lock netshield-core/
 COPY netshield-core/crates/common/Cargo.toml netshield-core/crates/common/Cargo.toml
 COPY netshield-core/crates/packet-parser/Cargo.toml netshield-core/crates/packet-parser/Cargo.toml
 COPY netshield-core/crates/detection/Cargo.toml netshield-core/crates/detection/Cargo.toml
+COPY netshield-core/crates/packet-capture/Cargo.toml netshield-core/crates/packet-capture/Cargo.toml
 COPY netshield-core/crates/api-server/Cargo.toml netshield-core/crates/api-server/Cargo.toml
 COPY netshield-core/crates/traffic-simulator/Cargo.toml netshield-core/crates/traffic-simulator/Cargo.toml
 
@@ -15,6 +16,7 @@ COPY netshield-core/crates/traffic-simulator/Cargo.toml netshield-core/crates/tr
 RUN mkdir -p netshield-core/crates/common/src && echo "pub fn stub() {}" > netshield-core/crates/common/src/lib.rs \
  && mkdir -p netshield-core/crates/packet-parser/src && echo "pub fn stub() {}" > netshield-core/crates/packet-parser/src/lib.rs \
  && mkdir -p netshield-core/crates/detection/src && echo "pub fn stub() {}" > netshield-core/crates/detection/src/lib.rs \
+ && mkdir -p netshield-core/crates/packet-capture/src && echo "pub fn stub() {}" > netshield-core/crates/packet-capture/src/lib.rs \
  && mkdir -p netshield-core/crates/api-server/src && echo "fn main() {}" > netshield-core/crates/api-server/src/main.rs \
  && echo "pub fn stub() {}" > netshield-core/crates/api-server/src/lib.rs \
  && mkdir -p netshield-core/crates/traffic-simulator/src && echo "fn main() {}" > netshield-core/crates/traffic-simulator/src/main.rs \

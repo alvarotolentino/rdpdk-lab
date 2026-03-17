@@ -19,7 +19,7 @@ impl Default for DetectionConfig {
             icmp_flood_threshold_pps: 2_000,
             dns_amplification_threshold_pps: 500,
             detection_window_seconds: 10,
-            alert_cooldown_seconds: 60,
+            alert_cooldown_seconds: 30,
         }
     }
 }

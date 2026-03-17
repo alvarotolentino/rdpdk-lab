@@ -34,7 +34,7 @@ impl PacketSource for MockSource {
 }
 
 fn generate_batch(cycle: u64) -> Vec<Vec<u8>> {
-    let mut batch = Vec::with_capacity(40);
+    let mut batch = Vec::with_capacity(512);
 
     // Normal TCP traffic (majority)
     for i in 0..10 {
@@ -63,30 +63,40 @@ fn generate_batch(cycle: u64) -> Vec<Vec<u8>> {
     batch.push(build_icmp_packet([10, 0, 1, 1], [10, 0, 0, 100]));
 
     // --- Attack patterns from multiple IPs ---
+    //
+    // Rate math: each batch fires every 10ms (100 batches/sec).
+    // Packets land in a 10-second sliding window, so
+    //   effective pps = (pkts_per_batch × attack_batches) / window_secs.
+    //
+    // Thresholds: SYN ≥ 1 000 pps, UDP ≥ 5 000 pps, ICMP ≥ 2 000 pps.
 
-    // SYN flood: 3 different attackers, staggered timing
+    // SYN flood: 3 attackers, staggered.  Each fires 120 pkts/batch
+    // for 200 cycles (2 s) every 600 cycles (6 s).
+    // Effective: 120 × 200 / 10 = 2 400 pps per attacker.
     let syn_attackers: [[u8; 4]; 3] = [[10, 0, 0, 50], [10, 0, 0, 51], [10, 0, 0, 52]];
     for (idx, attacker) in syn_attackers.iter().enumerate() {
-        let offset = (idx as u64) * 70;
-        if cycle % 300 >= offset && cycle % 300 < offset + 100 {
-            for port in 0..50 {
+        let offset = (idx as u64) * 150;
+        if cycle % 600 >= offset && cycle % 600 < offset + 200 {
+            for port in 0..120 {
                 batch.push(build_tcp_packet(
                     *attacker,
                     [10, 0, 0, 100],
                     40000 + port,
                     80,
-                    0x02,
+                    0x02, // SYN
                 ));
             }
         }
     }
 
-    // UDP flood: 2 different attackers
+    // UDP flood: 2 attackers.  Each fires 200 pkts/batch
+    // for 400 cycles (4 s) every 800 cycles (8 s).
+    // Effective: 200 × 400 / 10 = 8 000 pps per attacker.
     let udp_attackers: [[u8; 4]; 2] = [[10, 0, 0, 22], [10, 0, 0, 23]];
     for (idx, attacker) in udp_attackers.iter().enumerate() {
-        let offset = (idx as u64) * 250;
-        if cycle % 500 >= offset && cycle % 500 < offset + 50 {
-            for port in 0..30 {
+        let offset = (idx as u64) * 350;
+        if cycle % 800 >= offset && cycle % 800 < offset + 400 {
+            for port in 0..200 {
                 batch.push(build_udp_packet(
                     *attacker,
                     [10, 0, 0, 100],
@@ -97,10 +107,12 @@ fn generate_batch(cycle: u64) -> Vec<Vec<u8>> {
         }
     }
 
-    // ICMP flood: brief bursts
-    if cycle % 400 < 40 {
+    // ICMP flood: 1 attacker.  80 pkts/batch for 300 cycles (3 s)
+    // every 500 cycles (5 s).
+    // Effective: 80 × 300 / 10 = 2 400 pps.
+    if cycle % 500 < 300 {
         let attacker: [u8; 4] = [10, 0, 0, 33];
-        for _ in 0..40 {
+        for _ in 0..80 {
             batch.push(build_icmp_packet(attacker, [10, 0, 0, 100]));
         }
     }
