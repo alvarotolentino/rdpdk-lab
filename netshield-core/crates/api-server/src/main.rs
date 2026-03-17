@@ -39,8 +39,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             burst_size: _cli.burst_size,
             ..Default::default()
         };
-        let source = netshield_packet_capture::dpdk::DpdkSource::init(&config)?;
-        return netshield_api_server::run(source, "dpdk").await;
+        match netshield_packet_capture::dpdk::DpdkSource::init(&config) {
+            Ok(source) => return netshield_api_server::run(source, "dpdk").await,
+            Err(e) => {
+                eprintln!("DPDK initialization failed: {e}");
+                eprintln!("Falling back to mock traffic source");
+            }
+        }
     }
 
     // Mock mode: development fallback (any platform)

@@ -1,0 +1,20 @@
+# DPDK overlay — use on Linux hosts with DPDK-bound NICs or pcap vdev.
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.dpdk.yml up --build
+#
+# Adjust --eal-args for your environment:
+#   Physical NIC:  "netshield -l 0,1 -n 4 --allow 0000:03:00.0"
+#   pcap vdev:     "netshield -l 0 -n 4 --no-huge --no-pci --vdev=net_pcap0,iface=eth0"
+
+services:
+  backend:
+    privileged: true
+    volumes:
+      - /dev/hugepages:/dev/hugepages
+      - /sys/bus/pci:/sys/bus/pci
+      - /sys/kernel/mm/hugepages:/sys/kernel/mm/hugepages
+      - /sys/devices:/sys/devices
+    command:
+      - "--eal-args"
+      - "netshield -l 0 -n 4 --no-huge --no-pci -d /lib/x86_64-linux-gnu/librte_net_pcap.so -d /lib/x86_64-linux-gnu/librte_bus_vdev.so --vdev=net_pcap0,iface=eth0"

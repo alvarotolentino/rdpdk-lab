@@ -14,5 +14,8 @@ fn main() {
     for path in &dpdk.include_paths {
         cc.include(path);
     }
+    // DPDK headers (rte_memcpy.h) use SSSE3/SSE4 intrinsics
+    cc.flag_if_supported("-march=native");
+    cc.flag_if_supported("-mssse3");
     cc.compile("netshield_dpdk_helpers");
 }

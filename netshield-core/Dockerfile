@@ -1,5 +1,5 @@
 # --- Build stage ---
-FROM rust:1.82-bookworm AS builder
+FROM rust:1.85-bookworm AS builder
 
 # Install DPDK development dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -55,9 +55,21 @@ FROM debian:bookworm-slim AS runtime
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     curl \
-    dpdk \
     libnuma1 \
+    libfdt1 \
+    libjansson4 \
+    libbsd0 \
+    libelf1 \
+    libpcap0.8 \
+    libatomic1 \
+    libmnl0 \
+    libibverbs1 \
  && rm -rf /var/lib/apt/lists/*
+
+# Copy DPDK shared libraries from the builder (avoids installing full dpdk-dev at runtime)
+COPY --from=builder /usr/lib/x86_64-linux-gnu/librte_*.so* /lib/x86_64-linux-gnu/
+COPY --from=builder /usr/lib/x86_64-linux-gnu/libdpdk*.so* /lib/x86_64-linux-gnu/
+RUN ldconfig
 
 COPY --from=builder /app/target/release/api-server /usr/local/bin/api-server
 

@@ -7,16 +7,16 @@ Real-time DDoS detection proof-of-concept built on **DPDK** (Data Plane Developm
 ```
 ┌─────────────────┐       ┌──────────────────────────────────────────────┐
 │ React Dashboard │──────▶│          Rust API Server (Axum)              │
-│(Vite + Chart.js)│ REST  │  ┌──────────────┐                           │
+│(Vite + Chart.js)│ REST  │  ┌──────────────┐                            │
 │                 │  +WS  │  │ DPDK Capture  │  poll-mode rx_burst       │
-│• Throughput chart│◀───── │  │ (dpdk-sys FFI)│───┐                     │
-│• Protocol pie   │       │  └──────────────┘    │ raw Ethernet frames  │
-│• Alert table    │       │  ┌──────────┐    ┌───▼───────┐  ┌────────┐ │
-│• Top talkers    │       │  │ Packet   │───▶│ Detection │─▶│ Alerts │ │
-└─────────────────┘       │  │ Parser   │    │ Engine    │  │+ Stats │ │
-                           │  └──────────┘    └───────────┘  └────────┘ │
-                           │  Feature flags: --features dpdk | mock     │
-                           └──────────────────────────────────────────────┘
+│•Throughput chart│◀───── │  │ (dpdk-sys FFI)│───┐                       │
+│• Protocol pie   │       │  └──────────────┘    │ raw Ethernet frames   │
+│• Alert table    │       │  ┌──────────┐    ┌───▼───────┐  ┌────────┐   │
+│• Top talkers    │       │  │ Packet   │───▶│ Detection │─▶│ Alerts │   │
+└─────────────────┘       │  │ Parser   │    │ Engine    │  │+ Stats │   │
+                          │  └──────────┘    └───────────┘  └────────┘   │
+                          │  Feature flags: --features dpdk | mock       │
+                          └──────────────────────────────────────────────┘
                            ┌──────────────────────────────────────────────┐
                            │     Traffic Simulator (standalone CLI)       │
                            │  Configurable attack scenarios for testing   │
@@ -146,18 +146,21 @@ cargo run --release --bin traffic-simulator -- --scenario syn-flood --duration 3
 ### Run with Docker (DPDK Mode)
 
 ```bash
-# DPDK backend + Dashboard (requires Linux with DPDK + hugepages)
+# Default: backend (mock fallback) + Dashboard — works everywhere
 docker compose up --build
 
-# Mock mode (no DPDK required)
-docker compose --profile mock up backend-mock dashboard --build
-
-# Include the traffic simulator
+# With traffic simulator
 docker compose --profile with-simulator up --build
+
+# DPDK with pcap vdev (Linux host with DPDK libs only)
+docker compose -f docker-compose.yml -f docker-compose.dpdk.yml up --build
 ```
 
 - Dashboard: `http://localhost:8080`
 - Backend API: `http://localhost:3001`
+
+> **Note:** The DPDK binary automatically falls back to mock traffic when
+> DPDK EAL or port initialization fails (e.g. Docker Desktop on Windows/macOS).
 
 ## API Endpoints
 
